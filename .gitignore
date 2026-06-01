@@ -1,0 +1,14 @@
+# 코드/문서만 추적. 산출 데이터는 로컬 하드코딩 경로(../PHMG_IT, ../mammary_cancer)에 그대로 둠.
+__pycache__/
+*.pyc
+.DS_Store
+*.log
+# 혹시 새 폴더에서 실행 시 떨어질 수 있는 대용량 산출물 방지 (방어용)
+*.bam
+*.bai
+*.vcf
+*.vcf.gz
+*.tbi
+*.csi
+*.fa
+*.fai

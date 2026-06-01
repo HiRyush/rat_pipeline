@@ -1,0 +1,140 @@
+# ============================================================
+# Mouse Variant-Expression Pipeline Configuration
+# ============================================================
+# 모든 파라미터는 CLI 인수로도 지정 가능합니다.
+# CLI 값이 있으면 config 값을 override 합니다.
+
+# ---- Analysis mode ----
+# 'independent': disease model vs WT (서로 다른 개체)
+# 'paired':      tumor vs matched normal (같은 개체)
+mode: independent
+
+# ---- Output directory ----
+output: results/disease_vs_wt
+
+# ---- Input VCF files ----
+target:
+  - vcf/disease_1.vcf.gz
+  - vcf/disease_2.vcf.gz
+  - vcf/disease_3.vcf.gz
+  - vcf/disease_4.vcf.gz
+
+reference:
+  - vcf/control_1.vcf.gz
+  - vcf/control_2.vcf.gz
+  - vcf/control_3.vcf.gz
+
+# ---- Optional integration inputs ----
+# DESeq2 results CSV (log2FoldChange, padj columns required)
+de_genes: deseq2_results.csv
+
+# VEP annotation output (run VEP on for_vep.vcf first)
+# vep_results: results/disease_vs_wt/vep_output.txt
+
+
+# ============================================================
+# Variant Filtering Parameters
+# ============================================================
+params:
+
+  # ----------------------------------------------------------
+  # min_coverage: 최소 read depth
+  # ----------------------------------------------------------
+  # 이 값 미만의 depth를 가진 variant는 무시합니다.
+  # WGS 일반: 10~20, RNA-seq: 10~30, Targeted: 50~100
+  # 높일수록 → 더 stringent (variant 감소), 낮출수록 → 더 lenient
+  min_coverage: 10
+
+  # ----------------------------------------------------------
+  # min_qual: 최소 QUAL score
+  # ----------------------------------------------------------
+  # VCF의 QUAL 컬럼 (variant calling confidence).
+  # bcftools: Phred-scaled quality, GATK: variant quality score
+  # 20 = 99%, 30 = 99.9% confidence
+  # 높일수록 → false positive 감소, true positive도 일부 손실
+  min_qual: 30
+
+  # ----------------------------------------------------------
+  # min_alt_ratio: target 샘플에서의 최소 alt allele 비율
+  # ----------------------------------------------------------
+  # alt_count / (ref_count + alt_count)
+  # 0.3 = variant allele이 30% 이상일 때만 검출
+  # WGS heterozygous: ~0.5, subclonal: 0.1~0.3
+  # Independent mode 기본: 0.3, Paired mode 기본: 0.1
+  # 낮출수록 → subclonal variant 더 많이 검출 (noise 증가)
+  min_alt_ratio: 0.3
+
+  # ----------------------------------------------------------
+  # max_ref_alt_ratio: reference에서의 최대 alt allele 비율
+  # ----------------------------------------------------------
+  # Control 샘플에서 이 값 초과 시 → germline/공통 variant로 간주하여 제거
+  # 0.1 = control에서 10% 이하면 condition-specific으로 인정
+  # 0.0으로 설정하면 → control에서 완전히 없어야만 통과 (매우 stringent)
+  # 높일수록 → 더 lenient (일부 germline 포함 가능)
+  max_ref_alt_ratio: 0.1
+
+  # ----------------------------------------------------------
+  # min_recurrence: 최소 반복 출현 샘플 수
+  # ----------------------------------------------------------
+  # 이 수 이상의 target 샘플에서 발견되어야 유의미한 variant로 판정
+  # 2 = 최소 2개 샘플에서 공통으로 발견
+  # 1 = 단일 샘플도 허용 (noise 매우 증가, paired mode에 적합)
+  # target 샘플 수의 50% 이상 권장 (4개 중 2개 = 50%)
+  min_recurrence: 2
+
+  # ----------------------------------------------------------
+  # min_delta_alt_ratio: target-reference 간 alt ratio 최소 차이
+  # ----------------------------------------------------------
+  # delta = target_mean_alt_ratio - reference_mean_alt_ratio
+  # 0.2 = target에서 reference보다 최소 20%p 이상 높아야 통과
+  # Reference에서 alt_ratio=0이면 delta = target_alt_ratio
+  # 높일수록 → 더 확실한 차이만 검출, 낮출수록 → 미세한 차이도 포함
+  # 0.0 = 이 필터 비활성화 (max_ref_alt_ratio만으로 판정)
+  min_delta_alt_ratio: 0.2
+
+  # ----------------------------------------------------------
+  # DESeq2 Integration cutoffs
+  # ----------------------------------------------------------
+  # padj_cutoff: adjusted p-value (BH correction) 기준
+  padj_cutoff: 0.05
+
+  # log2fc_cutoff: |log2FoldChange| 최소값
+  # 1.0 = 2배 이상 발현 차이
+  log2fc_cutoff: 1.0
+
+
+# ============================================================
+# Parameter Presets (참고용)
+# ============================================================
+#
+# [Stringent] — false positive 최소화
+#   min_coverage: 20
+#   min_qual: 40
+#   min_alt_ratio: 0.4
+#   max_ref_alt_ratio: 0.05
+#   min_recurrence: 3
+#   min_delta_alt_ratio: 0.3
+#
+# [Default] — 균형잡힌 설정
+#   min_coverage: 10
+#   min_qual: 30
+#   min_alt_ratio: 0.3
+#   max_ref_alt_ratio: 0.1
+#   min_recurrence: 2
+#   min_delta_alt_ratio: 0.2
+#
+# [Lenient] — sensitivity 극대화
+#   min_coverage: 5
+#   min_qual: 20
+#   min_alt_ratio: 0.15
+#   max_ref_alt_ratio: 0.15
+#   min_recurrence: 1
+#   min_delta_alt_ratio: 0.1
+#
+# [Paired/Somatic] — tumor vs matched normal
+#   min_coverage: 10
+#   min_qual: 30
+#   min_alt_ratio: 0.1      # subclonal 허용
+#   max_ref_alt_ratio: 0.05 # germline 엄격 제거
+#   min_recurrence: 1       # 단일 pair도 허용
+#   min_delta_alt_ratio: 0.1

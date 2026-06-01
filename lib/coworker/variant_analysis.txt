@@ -1,0 +1,86 @@
+# preprocessing with STAR
+bash star_alignment_unsorted.sh
+--> using more broad parameters
+
+# variant calling with gatk
+bash gatk_rnaseq_variant_calling_broad.sh
+
+# 1. CLI로 직접
+python run_pipeline.py --mode independent \
+    --target dz*.vcf.gz --reference ctrl*.vcf.gz \
+    --min-coverage 20 --min-qual 40 --min-delta-alt-ratio 0.3
+
+# 2. config.yaml 수정 후
+python run_pipeline.py --config config.yaml
+
+# 3. config + CLI 혼합 (CLI가 config을 override)
+python run_pipeline.py --config config.yaml --min-recurrence 3
+
+### parameters
+--min-coverage 10 # 최소 read depth
+--min-qual 30 # 최소 QUAL score
+--min-alt-ratio 0.3 # target에서 최소 alt allele 비율
+--max-ref-alt-ratio 0.1 # control 에서 최대 혀용 alt ratio
+--min-recurrence 2 # 최소 반복 출현 샘플 수 
+--min-delta-alt-ratio 0.2 # target-control alt ratio 최소 차이
+
+
+# Disease model vs WT (independent)
+python run_pipeline.py --mode independent \
+    --target vcf/disease_1.vcf vcf/disease_2.vcf vcf/disease_3.vcf \
+    --reference vcf/ctrl_1.vcf vcf/ctrl_2.vcf vcf/ctrl_3.vcf \
+    --output results/
+
+# Tumor vs Normal (paired) — target과 reference 순서가 pair를 결정
+python run_pipeline.py --mode paired \
+    --target vcf/tumor_1.vcf vcf/tumor_2.vcf vcf/tumor_3.vcf \
+    --reference vcf/normal_1.vcf vcf/normal_2.vcf vcf/normal_3.vcf \
+    --output results/
+
+
+
+# 예시 코드
+python run_pipeline.py --mode independent \
+    --target /Users/YK/Desktop/cmol/WGS_RNAseq/codes/data/mouse_wgs_data/dz/SRR23619317_final.vcf.gz /Users/YK/Desktop/cmol/WGS_RNAseq/codes/data/mouse_wgs_data/dz/SRR23619322_final.vcf.gz /Users/YK/Desktop/cmol/WGS_RNAseq/codes/data/mouse_wgs_data/dz/SRR23619329_final.vcf.gz /Users/YK/Desktop/cmol/WGS_RNAseq/codes/data/mouse_wgs_data/dz/SRR23619333_final.vcf.gz\
+    --reference /Users/YK/Desktop/cmol/WGS_RNAseq/codes/data/mouse_wgs_data2/control/SRR23619284_final.vcf.gz /Users/YK/Desktop/cmol/WGS_RNAseq/codes/data/mouse_wgs_data2/control/SRR23619295_final.vcf.gz /Users/YK/Desktop/cmol/WGS_RNAseq/codes/data/mouse_wgs_data2/control/SRR23619438_final.vcf.gz \
+    --min-delta-alt-ratio 0.4 --min-qual 30 --max-ref-alt-ratio 0.12 --min-recurrence 2 \
+    --output results_trial/
+
+
+# 결과 vep annotation
+vep -i input_for_vep.vcf \
+    -o vep_annotated_results.txt \
+    --species mus_musculus \
+    --cache \
+    --everything \
+    --tab \
+    --force_overwrite
+
+#### validation
+# Step 1: variant_analyzer
+python run_pipeline.py --mode independent \
+    --target disease_*.vcf --reference control_*.vcf \
+    --output results/analyzer/
+
+# Step 2: bcftools isec (별도)
+bash validation/run_bcftools_isec.sh \
+    --disease /Users/YK/Desktop/cmol/WGS_RNAseq/codes/data/mouse_wgs_data/dz/SRR23619251_final.vcf.gz /Users/YK/Desktop/cmol/WGS_RNAseq/codes/data/mouse_wgs_data/dz/SRR23619265_final.vcf.gz /Users/YK/Desktop/cmol/WGS_RNAseq/codes/data/mouse_wgs_data/dz/SRR23619317_final.vcf.gz /Users/YK/Desktop/cmol/WGS_RNAseq/codes/data/mouse_wgs_data/dz/SRR23619322_final.vcf.gz /Users/YK/Desktop/cmol/WGS_RNAseq/codes/data/mouse_wgs_data/dz/SRR23619329_final.vcf.gz /Users/YK/Desktop/cmol/WGS_RNAseq/codes/data/mouse_wgs_data/dz/SRR23619333_final.vcf.gz\
+    --control /Users/YK/Desktop/cmol/WGS_RNAseq/codes/data/mouse_wgs_data2/control/SRR23619284_final.vcf.gz /Users/YK/Desktop/cmol/WGS_RNAseq/codes/data/mouse_wgs_data2/control/SRR23619295_final.vcf.gz /Users/YK/Desktop/cmol/WGS_RNAseq/codes/data/mouse_wgs_data2/control/SRR23619438_final.vcf.gz \
+    --output results/isec2/
+
+# Step 3: benchmark
+python validation/benchmark.py \
+    --analyzer-csv results/differential_all_variants.csv \
+    --disease-only-vcf results/isec/isec/0000.vcf \
+    --output results/benchmark/
+
+# validation - WGS vs RNAseq
+python3 compare_wgs_rna.py \
+  --wgs-va-csv  results_trial2/differential_all_variants.csv \
+  --wgs-vep     results_trial2/vep_annotated_results_wgs2.txt \
+  --rna-va-csv  results_rna2/differential_all_variants_rna.csv \
+  --rna-vep     results_rna2/vep_annotated_results_rna.txt \
+  --rna-raw-vcf /Users/YK/Desktop/cmol/WGS_RNAseq/codes/data/mutation_analysis_1229/gatk_output_broad/disease_{1,2,3,4,5,6}_final.vcf \
+  --count-table /Users/YK/Desktop/cmol/WGS_RNAseq/codes/data/mutation_analysis_1229/count_dz/disease_{1,2,3,4,5,6}_count.txt \
+  --min-count 10 \
+  --output report2.txt
