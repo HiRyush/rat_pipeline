@@ -1,4 +1,8 @@
 # 코드/문서만 추적. 산출 데이터는 로컬 하드코딩 경로(../PHMG_IT, ../mammary_cancer)에 그대로 둠.
+
+# 로컬 작업 메모리 — 배포(추적)되지 않도록 ignore. 이 폴더에서 작업할 때만 참조.
+CLAUDE.md
+
 __pycache__/
 *.pyc
 .DS_Store
