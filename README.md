@@ -26,7 +26,8 @@ raw fastq
 ```
 
 > 핵심 교훈: **Imputation은 detector가 아니라 filter로 써야 한다** (detector=0개, filter=PPV 67%).
-> Ablation에서 imputation filter step이 PPV를 2.15% → 66.95%로 +64.8%p 끌어올린 것이 main claim.
+> Ablation(`analysis/ablation/reproduce_ablation.py`, 재현 가능)에서 imputation filter step이
+> PPV를 ~2% → 68.9%로 끌어올린 것이 main claim. 최종 candidate=961, TRUE_SOMATIC=657, PPV 68.4%.
 
 ## 디렉토리
 
@@ -40,7 +41,8 @@ raw fastq
 | `pipeline/05_intersect_filter` | 교집합 + RNA editing/artifact filter (`observation_first_v2.py` = 최종) |
 | `pipeline/06_validation` | DNA truth PPV/recall 채점 |
 | `analysis/ablation` | component ablation |
-| `analysis/coverage_gene_mapping` | 1,392 → gene mapping, coverage, callable region |
+| `analysis/coverage_gene_mapping` | 최종 candidate → gene mapping, coverage (numerator 961/1,356로 재계산 필요) |
+| `analysis/ablation` | `reproduce_ablation.py` — 재현 가능한 ablation 캐스케이드 (A→B→C→D) |
 | `analysis/recall_decomposition` | recall 분해 분석 (B1~B4, salvage) |
 | `experimental/` | superseded 탐색 arm (freebayes, joint_calling, arms B/C/D, discordance detector) |
 | `lib/coworker` | Fisher differential / integration Python 패키지 (modules/ 통째, step02·03이 사용) |

@@ -1,0 +1,5 @@
+stage	total	somatic	germline	rna_only	ppv
+A_mutect2_union	2829566				
+B_fisher_differential	65375				
+C. ∩ Imputation	1356	934	377	45	68.9%
+D. + RNA editing (final)	961	657	275	29	68.4%
