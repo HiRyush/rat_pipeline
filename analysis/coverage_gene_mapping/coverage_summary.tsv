@@ -1,0 +1,3 @@
+candidate_set	n_cand	n_genes	pos_recall_af30	pos_recall_dp10	gene_recall_af30	gene_recall_dp10	gene_recall_dnaall	captured_strict
+C_1356_pre_editing	1356	345	62.05%	40.70%	73.68%	40.88%	7.32%	921
+D_961_final	961	293	43.48%	28.52%	67.29%	37.47%	6.65%	646
