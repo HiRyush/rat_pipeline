@@ -67,3 +67,51 @@ source /home/yusanghyeon/RAT_project/miniforge3/etc/profile.d/conda.sh
 conda activate rnaseq            # STAR, GATK 4.6.1.0, bcftools, Beagle 5.5
 # 각 step 스크립트를 순서대로 실행. 데이터 입출력 경로는 스크립트 내부에 하드코딩되어 있음.
 ```
+
+---
+
+## Adapting to your own data (other species / datasets)
+
+This repo ships the **method**, developed and validated on rat (PHMG_IT, rn7). It is meant to be
+**ported and re-validated on other datasets and species** (mouse, human, …). Before you start,
+read the assumptions — they decide whether the method can work on your data at all.
+
+### Method assumptions (read this first)
+
+The method recovers **treatment-enriched, DNA-real, non-germline variants from RNA-seq alone**, and
+its key step (imputation-as-filter) relies on **segregating germline diversity within the cohort**.
+Concretely you need:
+
+- **Treatment vs. control design with biological replicates** — the differential step uses Fisher
+  exact + recurrence across samples (recurrence ≥ 2 at identical coordinates).
+- **A genetically diverse / outbred / multi-strain cohort.** The imputation-as-filter step
+  reconstructs germline genotypes against a reference panel. In a **single inbred line** (e.g. one
+  C57BL/6 substrain) there is essentially no segregating germline, so the imputation filter has
+  nothing to act on and the candidate set collapses to ~0. This is expected behavior, not a bug —
+  the method targets populations that carry germline variation.
+- **A species/cohort reference diversity panel** for imputation — rat: HRDP (75-strain);
+  mouse: Sanger Mouse Genomes Project (MGP); human: 1000 Genomes / HRC.
+- **(Validation only) matched DNA** (WGS/WES) per sample to score PPV / recall. Not required to
+  *run* the method on new data — only to *benchmark* it against ground truth.
+
+### What to swap when changing species
+
+| Component | rat (this repo) | change to |
+|---|---|---|
+| Reference genome + index | rn7 fasta + STAR index | your build (e.g. mm39, GRCh38) |
+| Chromosome list | chr1–20, X | your species' chromosomes |
+| Imputation reference panel | HRDP phased panel | MGP (mouse) / 1000G (human) / … |
+| Sample sheet | `C1–C5`, `P1–P10` (hardcoded) | your control / treatment sample IDs |
+| Data paths | hardcoded `/home/.../RAT_project/...` | your locations (see `config/paths.env`) |
+| DNA truth (optional) | PHMG_IT WGS VCFs | your matched DNA SNP VCFs |
+
+### Pipeline order (same regardless of species)
+
+`01_alignment → 02_variant_calling → 03_differential → 04_imputation → 05_intersect_filter → 06_validation`
+(see diagram above). The ablation cascade (A→D) and PPV/recall scoring under `analysis/` show how
+to report results on a new dataset.
+
+> Heads-up: scripts currently contain absolute paths and hardcoded sample names, so adapting means
+> editing these per script. `config/paths.env` is a reference map of those paths and is the intended
+> single source of truth going forward — PRs that wire scripts to it (and parametrize the sample
+> sheet) are welcome.
