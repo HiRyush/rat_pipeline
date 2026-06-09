@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "rat_pipeline: RNA-only somatic-like variant detection"
+abstract: >-
+  Pipeline for detecting somatic-like / treatment-enriched non-germline
+  variants from RNA-seq alone (no matched DNA), using observation-first
+  differential calling with imputation-as-filter. Developed and validated
+  on the rat PHMG_IT dataset (rn7) against WGS DNA ground truth.
+type: software
+authors:
+  - family-names: Yu
+    given-names: Sanghyeon
+    orcid: "https://orcid.org/0009-0006-8789-575X"
+    affiliation: "Kyung Hee University"
+version: 0.1.0
+date-released: "2026-06-09"
+license: MIT
+repository-code: "https://github.com/HiRyush/rat_pipeline"
+url: "https://github.com/HiRyush/rat_pipeline"
+keywords:
+  - RNA-seq
+  - somatic variant calling
+  - variant imputation
+  - bioinformatics
+  - rat
